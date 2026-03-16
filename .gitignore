@@ -1,0 +1,24 @@
+# Environment variables (Sensitive Data)
+.env
+backend/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+
+# Node/React
+node_modules/
+dist/
+build/
+.DS_Store
+
+# YOLO/Models
+runs/
+*.pt
+
+# Data/Uploads
+backend/uploads/
