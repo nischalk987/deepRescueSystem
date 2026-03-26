@@ -17,13 +17,15 @@ import {
   Square,
   Activity,
   User,
-  Zap
+  Zap,
+  Moon,
+  Sun
 } from 'lucide-react';
 import axios from 'axios';
 import Auth from './Auth';
 
 const App = () => {
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(sessionStorage.getItem('token'));
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
@@ -37,11 +39,17 @@ const App = () => {
   const [results, setResults] = useState(null);
   const [emailStatus, setEmailStatus] = useState(null);
   const [showEmailPopup, setShowEmailPopup] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [alertMuted, setAlertMuted] = useState(false);
   const fileInputRef = useRef(null);
   const abortControllerRef = useRef(null);
   // Track whether the stream was ever confirmed active (prevents race-condition premature kill)
   const streamWasActiveRef = useRef(false);
   const streamInactiveCountRef = useRef(0);
+  
+  useEffect(() => {
+    document.body.classList.toggle('light-mode', !isDarkMode);
+  }, [isDarkMode]);
 
   // Reset status on initial load to prevent persistent blinking from old states
   useEffect(() => {
@@ -61,9 +69,11 @@ const App = () => {
           const statusRes = await axios.get('http://127.0.0.1:8000/status', {
             headers: { 'Authorization': `Bearer ${token}` }
           });
-          
           setDrowningDetected(statusRes.data.drowning_detected);
           setPersonCount(statusRes.data.person_count);
+          if (statusRes.data.alert_muted !== undefined) {
+            setAlertMuted(statusRes.data.alert_muted);
+          }
           
           if (statusRes.data.email_sent && !showEmailPopup) {
             setShowEmailPopup(true);
@@ -146,6 +156,7 @@ const App = () => {
     setUploading(true);
     setLoading(true);
     setDrowningDetected(false);
+    setAlertMuted(false);
     setShowEmailPopup(false);
     setEmailStatus(null);
     setStreamUrl(null);
@@ -237,6 +248,7 @@ const App = () => {
     setPreview(null);
     setVideoPreviewUrl(null);
     setDrowningDetected(false);
+    setAlertMuted(false);
     setShowEmailPopup(false);
     setIsMonitoring(false);
     setStreamUrl(null);
@@ -278,6 +290,7 @@ const App = () => {
     setStreamUrl(null);
     setIsMonitoring(false);
     setDrowningDetected(false);
+    setAlertMuted(false);
     
     // Reset backend status to stop blinking
     axios.post('http://127.0.0.1:8000/reset_status', {}, {
@@ -290,7 +303,7 @@ const App = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     setToken(null);
     stopMonitoring();
   };
@@ -323,6 +336,17 @@ const App = () => {
     </div>
   );
 
+  const handleStopAlert = async () => {
+    try {
+      await axios.post('http://127.0.0.1:8000/stop_alert', {}, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setAlertMuted(true);
+    } catch (e) {
+      console.error("Failed to mute alert", e);
+    }
+  };
+
   if (!token) {
     return <Auth onAuthSuccess={(newToken) => setToken(newToken)} />;
   }
@@ -331,7 +355,7 @@ const App = () => {
     <div className="min-h-screen custom-scrollbar bg-primary-deep text-white">
       {/* Alert Overlay Flash & Vignette */}
       <AnimatePresence>
-        {drowningDetected && (
+        {drowningDetected && !alertMuted && (
           <>
             <motion.div 
               initial={{ opacity: 0 }}
@@ -388,6 +412,13 @@ const App = () => {
             <button onClick={() => {setMode('video'); stopMonitoring();}} className={`hover:text-primary transition-colors ${mode === 'video' ? 'text-primary' : ''}`}>Video</button>
           </div>
           <div className="flex items-center gap-4">
+             <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className={`p-2 rounded-xl border transition-colors ${isDarkMode ? 'bg-white/5 hover:bg-white/10 border-white/10 text-white' : 'bg-black/5 hover:bg-black/10 border-black/10 text-gray-800'}`}
+                title="Toggle Theme"
+             >
+                {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+             </button>
              <button 
                 onClick={handleLogout}
                 className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold uppercase transition-colors"
@@ -507,17 +538,18 @@ const App = () => {
           <div className="glass-card p-6 overflow-hidden relative">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-white/80">Alert Indicators</h3>
             <div className="space-y-4">
-              <div className={`relative flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${drowningDetected ? 'bg-accent/30 border-accent alert-blink shadow-[0_0_30px_rgba(255,75,43,0.4)]' : 'bg-white/5 border-white/10 text-white/30'}`}>
+              <div className={`relative flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${(drowningDetected && !alertMuted) ? 'bg-accent/30 border-accent alert-blink shadow-[0_0_30px_rgba(255,75,43,0.4)]' : 'bg-white/5 border-white/10 text-white/30'}`}>
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${drowningDetected ? 'bg-accent text-white beep-active shadow-[0_0_15px_rgba(255,75,43,0.8)]' : 'bg-white/5'}`}>
+                  <div className={`p-2 rounded-lg ${(drowningDetected && !alertMuted) ? 'bg-accent text-white beep-active shadow-[0_0_15px_rgba(255,75,43,0.8)]' : 'bg-white/5'}`}>
                     <Bell size={20} />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xs font-black uppercase tracking-tighter">Audio Alarm</span>
-                    {drowningDetected && <span className="text-[10px] font-bold text-accent animate-pulse">EMERGENCY BLINK</span>}
+                    {(drowningDetected && !alertMuted) && <span className="text-[10px] font-bold text-accent animate-pulse">EMERGENCY BLINK</span>}
+                    {(drowningDetected && alertMuted) && <span className="text-[10px] font-bold text-white/40">MUTED</span>}
                   </div>
                 </div>
-                <div className={`w-3 h-3 rounded-full ${drowningDetected ? 'bg-accent shadow-[0_0_10px_#FF4B2B] animate-ping' : 'bg-white/10'}`}></div>
+                <div className={`w-3 h-3 rounded-full ${(drowningDetected && !alertMuted) ? 'bg-accent shadow-[0_0_10px_#FF4B2B] animate-ping' : 'bg-white/10'}`}></div>
               </div>
 
               <div className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${emailStatus === 'sent' ? 'bg-green-500/20 border-green-500 text-white' : drowningDetected ? 'bg-primary/20 border-primary/50 text-white animate-pulse' : 'bg-white/5 border-white/10 text-white/30'}`}>
@@ -552,6 +584,15 @@ const App = () => {
                 ></div>
               </div>
             </div>
+
+            {drowningDetected && !alertMuted && (
+              <button 
+                onClick={handleStopAlert}
+                className="w-full mt-6 py-3 rounded-xl bg-accent text-white font-black uppercase tracking-widest text-sm hover:opacity-90 transition-opacity shadow-[0_0_20px_rgba(255,75,43,0.4)] flex items-center justify-center gap-2"
+              >
+                <Square fill="currentColor" size={16} /> Stop Alert
+              </button>
+            )}
           </div>
         </div>
 
@@ -619,7 +660,7 @@ const App = () => {
 
                 {/* Drowning Alert Overlay */}
                 <AnimatePresence>
-                  {drowningDetected && (
+                  {drowningDetected && !alertMuted && (
                     <motion.div 
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}

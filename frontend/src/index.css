@@ -162,3 +162,46 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; background-color: #FF4B2B; }
 }
+
+/* Light Mode Overrides */
+body.light-mode {
+  background-color: #F8FAFC !important;
+  color: #0F172A !important;
+}
+body.light-mode .text-white {
+  color: #0F172A !important;
+}
+body.light-mode .text-white\/40,
+body.light-mode .text-white\/30,
+body.light-mode .text-white\/50,
+body.light-mode .text-white\/60,
+body.light-mode .text-white\/70,
+body.light-mode .text-white\/80 {
+  color: #475569 !important;
+}
+body.light-mode .glass {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+body.light-mode .glass-card {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(0, 209, 255, 0.3) !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05) !important;
+}
+body.light-mode .bg-primary-deep {
+  background-color: #F8FAFC !important;
+}
+body.light-mode .bg-white\/5,
+body.light-mode .bg-white\/10,
+body.light-mode .bg-white\/20 {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+body.light-mode .border-white\/5,
+body.light-mode .border-white\/10 {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+body.light-mode .threat-meter {
+  background: rgba(0,0,0,0.1) !important;
+}
+

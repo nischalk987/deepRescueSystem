@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldAlert, Mail, Lock, Loader2, ArrowRight, UserPlus, LogIn } from 'lucide-react';
+import { ShieldAlert, Mail, Lock, Loader2, ArrowRight, UserPlus, LogIn, Sun, Moon } from 'lucide-react';
 import axios from 'axios';
 
 const Auth = ({ onAuthSuccess }) => {
@@ -9,6 +9,11 @@ const Auth = ({ onAuthSuccess }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isDarkMode, setIsDarkMode] = useState(true);
+
+  useEffect(() => {
+    document.body.classList.toggle('light-mode', !isDarkMode);
+  }, [isDarkMode]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,7 +27,7 @@ const Auth = ({ onAuthSuccess }) => {
         formData.append('password', password);
         
         const response = await axios.post('http://127.0.0.1:8000/login', formData);
-        localStorage.setItem('token', response.data.access_token);
+        sessionStorage.setItem('token', response.data.access_token);
         onAuthSuccess(response.data.access_token);
       } else {
         await axios.post('http://127.0.0.1:8000/signup', { email, password });
@@ -37,7 +42,20 @@ const Auth = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-primary-deep px-6 relative overflow-hidden">
+    <div className={`min-h-screen flex items-center justify-center px-6 relative overflow-hidden transition-colors duration-300 ${isDarkMode ? 'bg-primary-deep text-white dark-theme' : 'bg-gray-50 text-gray-900 light-theme'}`}>
+      
+      {/* Theme Toggle Button */}
+      <div className="absolute top-6 right-6 z-50">
+         <button
+            type="button"
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            className={`p-2 rounded-xl border transition-colors ${isDarkMode ? 'bg-white/5 hover:bg-white/10 border-white/10 text-white' : 'bg-black/5 hover:bg-black/10 border-black/10 text-gray-800'}`}
+            title="Toggle Theme"
+         >
+            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+         </button>
+      </div>
+
       {/* Background Decor */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/10 blur-[120px] rounded-full" />
